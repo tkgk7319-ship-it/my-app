@@ -1,4 +1,3 @@
-// 1. generator と datasource は prisma init が作ったものをそのまま使う（url は書かない）
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -8,8 +7,8 @@ datasource db {
   provider = "postgresql"
 }
 
-// 2. 末尾に User モデルを追加
 model User {
   id   Int    @id @default(autoincrement())
   name String
+  age  Int?
 }
