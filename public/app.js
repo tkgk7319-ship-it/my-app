@@ -10,13 +10,15 @@ let mediaStream = null;
 const views = {
   dashboard: document.getElementById('dashboard-view'),
   scan: document.getElementById('scan-view'),
-  history: document.getElementById('history-view')
+  history: document.getElementById('history-view'),
+  settings: document.getElementById('settings-view')
 };
 
 const navButtons = {
   dashboard: document.getElementById('nav-dashboard'),
   scan: document.getElementById('nav-scan'),
-  history: document.getElementById('nav-history')
+  history: document.getElementById('nav-history'),
+  settings: document.getElementById('nav-settings')
 };
 
 // Toast Notification System
@@ -87,12 +89,30 @@ function switchView(viewName) {
   } else if (viewName === 'history') {
     setDefaultHistoryDates();
     loadHistoryData();
+  } else if (viewName === 'settings') {
+    loadSettingsData();
   }
 }
 
 // Setup Nav Event Listeners
 Object.keys(navButtons).forEach(key => {
   navButtons[key].addEventListener('click', () => switchView(key));
+});
+
+// Setup Scan View Tabs Event Listeners
+document.querySelectorAll('.scan-tab-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    // Remove active class from all tab buttons and contents
+    document.querySelectorAll('.scan-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.scan-tab-content').forEach(c => c.classList.remove('active'));
+
+    // Add active class to clicked button
+    e.currentTarget.classList.add('active');
+
+    // Show target content
+    const targetId = e.currentTarget.getAttribute('data-target');
+    document.getElementById(targetId).classList.add('active');
+  });
 });
 
 // --- TAGS RETRIEVAL ---
@@ -513,6 +533,8 @@ function renderOcrItems() {
       const selectedAttr = item.tag_id === tag.id ? 'selected' : '';
       tagOptions += `<option value="${tag.id}" ${selectedAttr}>${tag.name}</option>`;
     });
+    const newSelectedAttr = item.tag_id === 'new' ? 'selected' : '';
+    tagOptions += `<option value="new" ${newSelectedAttr}>＋ 新規カテゴリ</option>`;
 
     tr.innerHTML = `
       <td>
@@ -534,6 +556,10 @@ function renderOcrItems() {
         <select class="tag-selector" data-index="${index}">
           ${tagOptions}
         </select>
+        <div class="inline-new-tag-form" data-index="${index}" style="display: ${item.tag_id === 'new' ? 'flex' : 'none'}; align-items: center; gap: 4px; margin-top: 4px;">
+          <input type="color" class="color-picker-input-sm" value="${item.new_tag_color || '#868e96'}" data-field="new_tag_color" data-index="${index}" style="width: 24px; height: 24px; border: none; padding: 0; cursor: pointer; background: transparent;">
+          <input type="text" class="table-input" value="${item.new_tag_name || ''}" placeholder="カテゴリ名" data-field="new_tag_name" data-index="${index}" style="padding: 4px; font-size: 12px;">
+        </div>
       </td>
       <td>
         <button class="delete-row-btn remove-item-btn" data-index="${index}" title="削除">
@@ -594,8 +620,34 @@ function renderOcrItems() {
     // Select change listener
     tr.querySelector('.tag-selector').addEventListener('change', (e) => {
       const idx = parseInt(e.target.getAttribute('data-index'), 10);
-      scannedItems[idx].tag_id = parseInt(e.target.value, 10);
+      const val = e.target.value;
+      const form = tr.querySelector(`.inline-new-tag-form[data-index="${idx}"]`);
+      
+      if (val === 'new') {
+        scannedItems[idx].tag_id = 'new';
+        form.style.display = 'flex';
+      } else {
+        scannedItems[idx].tag_id = parseInt(val, 10);
+        form.style.display = 'none';
+      }
     });
+
+    // New tag input listeners
+    const newNameInput = tr.querySelector('input[data-field="new_tag_name"]');
+    if (newNameInput) {
+      newNameInput.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.getAttribute('data-index'), 10);
+        scannedItems[idx].new_tag_name = e.target.value;
+      });
+    }
+
+    const newColorInput = tr.querySelector('input[data-field="new_tag_color"]');
+    if (newColorInput) {
+      newColorInput.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.getAttribute('data-index'), 10);
+        scannedItems[idx].new_tag_color = e.target.value;
+      });
+    }
 
     // Delete item listener
     tr.querySelector('.remove-item-btn').addEventListener('click', (e) => {

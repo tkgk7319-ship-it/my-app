@@ -212,6 +212,44 @@ app.get('/api/tags', async (req: any, res: any) => {
   }
 });
 
+app.post('/api/tags', async (req: any, res: any) => {
+  const { name, color } = req.body;
+  if (!name || !color) return res.status(400).json({ error: 'Name and color are required.' });
+  try {
+    const tag = await prisma.tag.create({ data: { name, color } });
+    res.json({ success: true, tag });
+  } catch (err: any) {
+    if (err.code === 'P2002') return res.status(400).json({ error: 'Tag name already exists.' });
+    res.status(500).json({ error: 'Failed to create tag: ' + err.message });
+  }
+});
+
+app.put('/api/tags/:id', async (req: any, res: any) => {
+  const { id } = req.params;
+  const { name, color } = req.body;
+  if (!name || !color) return res.status(400).json({ error: 'Name and color are required.' });
+  try {
+    const tag = await prisma.tag.update({
+      where: { id: parseInt(id, 10) },
+      data: { name, color }
+    });
+    res.json({ success: true, tag });
+  } catch (err: any) {
+    if (err.code === 'P2002') return res.status(400).json({ error: 'Tag name already exists.' });
+    res.status(500).json({ error: 'Failed to update tag: ' + err.message });
+  }
+});
+
+app.delete('/api/tags/:id', async (req: any, res: any) => {
+  const { id } = req.params;
+  try {
+    await prisma.tag.delete({ where: { id: parseInt(id, 10) } });
+    res.json({ success: true, message: 'Tag deleted successfully.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete tag: ' + err.message });
+  }
+});
+
 // Upload and OCR
 app.post('/api/upload', upload.single('receipt'), async (req: any, res: any) => {
   if (!req.file) {
@@ -260,6 +298,21 @@ app.post('/api/expenses', async (req: any, res: any) => {
       .filter((item: any) => item.is_selected === 1)
       .reduce((sum: number, item: any) => sum + parseInt(item.amount, 10), 0);
 
+    // Process inline tag creation
+    for (const item of items) {
+      if (item.tag_id === 'new' && item.new_tag_name) {
+        let existingTag = await prisma.tag.findUnique({
+          where: { name: item.new_tag_name }
+        });
+        if (!existingTag) {
+          existingTag = await prisma.tag.create({
+            data: { name: item.new_tag_name, color: item.new_tag_color || '#868e96' }
+          });
+        }
+        item.tag_id = existingTag.id;
+      }
+    }
+
     const expense = await prisma.expense.create({
       data: {
         date,
@@ -271,7 +324,7 @@ app.post('/api/expenses', async (req: any, res: any) => {
             amount: parseInt(item.amount, 10),
             unitPrice: parseInt(item.unit_price || 0, 10),
             quantity: parseInt(item.quantity || 1, 10),
-            tagId: item.tag_id || null,
+            tagId: parseInt(item.tag_id, 10) || null,
             isSelected: item.is_selected
           }))
         }

@@ -1442,3 +1442,122 @@ h1 {
                     repeating-linear-gradient(45deg, #111 25%, #050505 25%, #050505 75%, #111 75%, #111) !important;
 }
 
+/* --- SETTINGS VIEW STYLES --- */
+.settings-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.tag-list-wrapper {
+  margin-top: 20px;
+  overflow-x: auto;
+}
+
+.color-picker-input, .color-picker-input-sm {
+  -webkit-appearance: none;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  background-color: transparent;
+}
+.color-picker-input-sm {
+  width: 24px;
+  height: 24px;
+}
+.color-picker-input::-webkit-color-swatch-wrapper, .color-picker-input-sm::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.color-picker-input::-webkit-color-swatch, .color-picker-input-sm::-webkit-color-swatch {
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+.color-picker-input::-moz-color-swatch, .color-picker-input-sm::-moz-color-swatch {
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.btn-save-tag {
+  color: var(--accent);
+}
+.btn-save-tag:hover {
+  background: var(--accent-glow);
+}
+.btn-delete-tag:hover {
+  background: var(--danger-glow);
+/* Scan Tabs UI */
+.scan-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.scan-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  color: var(--text-sub);
+  padding: 12px 24px;
+  border-radius: var(--border-radius-md);
+  font-family: var(--font-family-display);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scan-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.scan-tab-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.scan-tab-content {
+  display: none;
+  animation: modalFadeIn 0.3s forwards;
+}
+.scan-tab-content.active {
+  display: block;
+}
+
+/* Bottom Actions Panel for Scan */
+.scan-bottom-actions {
+  margin-top: 24px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  .scan-bottom-actions {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .scan-bottom-actions .form-actions {
+    width: 100%;
+  }
+}
+
+
+/* Fix select dropdown styles for dark mode */
+.tag-selector {
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-family-sans);
+  font-size: 13px;
+  outline: none;
+}
+.tag-selector option {
+  background-color: #1e293b;
+  color: #ffffff;
+}

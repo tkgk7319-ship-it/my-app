@@ -43,6 +43,9 @@
         <button class="nav-btn" data-target="history-view" id="nav-history">
           <i class="fa-solid fa-list-ul"></i><span>支出履歴</span>
         </button>
+        <button class="nav-btn" data-target="settings-view" id="nav-settings">
+          <i class="fa-solid fa-gear"></i><span>設定</span>
+        </button>
       </nav>
     </header>
 
@@ -193,40 +196,15 @@
 
         <!-- Step 2: OCR Result Details & Edit -->
         <div id="scan-result-area" class="scan-result-container" style="display: none;">
-          <div class="grid-2-col">
-            <!-- Form Card (Date, Memo) -->
-            <div class="glass-card form-card">
-              <div class="card-header">
-                <h2><i class="fa-solid fa-pen-to-square"></i>レシート情報</h2>
-              </div>
-              <div class="form-group">
-                <label for="expense-date">日付</label>
-                <input type="date" id="expense-date" class="form-control">
-              </div>
-              <div class="form-group">
-                <label for="expense-memo">メモ (店舗名など)</label>
-                <input type="text" id="expense-memo" class="form-control" placeholder="例: スーパーマーケットA、ドラッグストアなど">
-              </div>
+          <!-- Tab Header -->
+          <div class="scan-tabs">
+            <button class="scan-tab-btn active" data-target="tab-items"><i class="fa-solid fa-list-check"></i>商品明細</button>
+            <button class="scan-tab-btn" data-target="tab-info"><i class="fa-solid fa-pen-to-square"></i>基本情報</button>
+          </div>
 
-              <!-- Total Counter -->
-              <div class="total-result-box">
-                <span class="total-result-label">選択した商品の合計金額</span>
-                <div class="total-result-amount">
-                  <span class="curr">¥</span>
-                  <span class="val" id="scan-total-display">0</span>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <button class="btn btn-secondary" id="cancel-scan-btn">やり直す</button>
-                <button class="btn btn-primary btn-glow" id="save-expense-btn">
-                  <i class="fa-solid fa-floppy-disk"></i>家計簿に保存
-                </button>
-              </div>
-            </div>
-
-            <!-- Items List Card -->
-            <div class="glass-card items-card">
+          <div class="scan-tab-content-wrapper">
+            <!-- Items List Card (Default Active Tab) -->
+            <div id="tab-items" class="glass-card items-card scan-tab-content active">
               <div class="card-header">
                 <h2><i class="fa-solid fa-list-check"></i>読み取った商品一覧</h2>
                 <button class="btn btn-sm btn-secondary" id="add-item-btn"><i class="fa-solid fa-plus"></i>行を追加</button>
@@ -250,6 +228,38 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            <!-- Form Card (Date, Memo) -->
+            <div id="tab-info" class="glass-card form-card scan-tab-content">
+              <div class="card-header">
+                <h2><i class="fa-solid fa-pen-to-square"></i>レシート情報</h2>
+              </div>
+              <div class="form-group">
+                <label for="expense-date">日付</label>
+                <input type="date" id="expense-date" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="expense-memo">メモ (店舗名など)</label>
+                <input type="text" id="expense-memo" class="form-control" placeholder="例: スーパーマーケットA、ドラッグストアなど">
+              </div>
+            </div>
+          </div>
+
+          <!-- Total & Actions (Visible across all tabs) -->
+          <div class="scan-bottom-actions glass-card">
+            <div class="total-result-box">
+              <span class="total-result-label">選択した商品の合計金額</span>
+              <div class="total-result-amount">
+                <span class="curr">¥</span>
+                <span class="val" id="scan-total-display">0</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" id="cancel-scan-btn">やり直す</button>
+              <button class="btn btn-primary btn-glow" id="save-expense-btn">
+                <i class="fa-solid fa-floppy-disk"></i>家計簿に保存
+              </button>
             </div>
           </div>
         </div>
@@ -297,6 +307,38 @@
           <div class="history-list-box" id="history-records-container">
             <!-- Rendered via JS as interactive accordions -->
             <p class="no-data-msg">条件に合う支出データが見つかりませんでした</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS VIEW -->
+      <section id="settings-view" class="view-section">
+        <div class="view-header">
+          <div>
+            <h1>設定</h1>
+            <p class="subtitle">カテゴリ（タグ）のカスタマイズ</p>
+          </div>
+        </div>
+
+        <div class="glass-card settings-card">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-tags"></i> カテゴリ管理</h2>
+            <button class="btn btn-sm btn-primary" id="add-tag-btn"><i class="fa-solid fa-plus"></i> 新規追加</button>
+          </div>
+          
+          <div class="tag-list-wrapper">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th width="40">色</th>
+                  <th>カテゴリ名</th>
+                  <th width="100">操作</th>
+                </tr>
+              </thead>
+              <tbody id="settings-tag-list">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
