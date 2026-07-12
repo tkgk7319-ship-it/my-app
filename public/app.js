@@ -708,7 +708,10 @@ function resetScanUI() {
 document.getElementById('cancel-scan-btn').addEventListener('click', resetScanUI);
 
 // Save to DB
-document.getElementById('save-expense-btn').addEventListener('click', async () => {
+document.getElementById('save-expense-btn').addEventListener('click', async function() {
+  const btn = this;
+  const originalHtml = btn.innerHTML;
+
   const dateStr = document.getElementById('expense-date').value;
   const memoStr = document.getElementById('expense-memo').value;
 
@@ -720,6 +723,10 @@ document.getElementById('save-expense-btn').addEventListener('click', async () =
     showToast('商品項目がありません。項目を追加してください。', 'error');
     return;
   }
+
+  // Set loading state
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
 
   // Prepare payload
   const payload = {
@@ -751,6 +758,10 @@ document.getElementById('save-expense-btn').addEventListener('click', async () =
   } catch (err) {
     console.error('Save failed:', err);
     showToast('保存に失敗しました: ' + err.message, 'error');
+  } finally {
+    // Reset button state
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
   }
 });
 
