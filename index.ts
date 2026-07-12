@@ -1,10 +1,12 @@
 import "dotenv/config";
 import express from "express";
+import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./generated/prisma/client";
 
-// データベース接続の設定（Prisma 7 のアダプターを使う方法じゃ）
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+// データベース接続の設定（Pool を作って adapter に渡す）
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter, log: ["query"] });
 
 const app = express();
@@ -27,7 +29,6 @@ app.get("/", async (req, res) => {
 app.post("/users", async (req, res) => {
   const name = req.body.name;
   if (name) {
-    // データベースにユーザーを保存するぞ
     const newUser = await prisma.user.create({ data: { name } });
     console.log("ユーザーを追加したぞ:", newUser);
   }
