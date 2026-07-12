@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id   Int    @id @default(autoincrement())
+  name String
+  age  Int?
+}
+
+model Tag {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  color        String
+  expenseItems ExpenseItem[]
+}
+
+model Expense {
+  id          Int           @id @default(autoincrement())
+  date        String
+  totalAmount Int           @default(0) @map("total_amount")
+  memo        String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  items       ExpenseItem[]
+}
+
+model ExpenseItem {
+  id         Int     @id @default(autoincrement())
+  expenseId  Int     @map("expense_id")
+  expense    Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Int     @default(0)
+  unitPrice  Int     @default(0) @map("unit_price")
+  quantity   Int     @default(1)
+  tagId      Int?    @map("tag_id")
+  tag        Tag?    @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  isSelected Int     @default(1) @map("is_selected")
+}
