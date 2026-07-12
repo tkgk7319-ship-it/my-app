@@ -829,8 +829,16 @@ async function loadHistoryData() {
   }
 
   try {
-    const response = await fetch(`/api/expenses?start_date=${startDate}&end_date=${endDate}`);
-    if (!response.ok) throw new Error('Failed to retrieve history');
+    const response = await fetch(`/api/expenses?start_date=${startDate}&end_date=${endDate}`, { headers: getAuthHeaders() });
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Unauthorized, redirect to login
+        document.querySelector('.app-header').style.display = 'none';
+        switchView('auth');
+        return;
+      }
+      throw new Error('Failed to retrieve history');
+    }
     const data = await response.json();
 
     // Set summary values
