@@ -688,12 +688,24 @@ document.getElementById('add-item-btn').addEventListener('click', () => {
   renderOcrItems();
 });
 
-// Cancel scanning and restart
-document.getElementById('cancel-scan-btn').addEventListener('click', () => {
+// Reset Scan UI to default state
+function resetScanUI() {
   scannedItems = [];
   scanResultArea.style.display = 'none';
   uploadZone.style.display = 'block';
-});
+  document.getElementById('file-input').value = ''; // Reset file input
+
+  // Reset tabs to default (items tab)
+  document.querySelectorAll('.scan-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.scan-tab-content').forEach(c => c.classList.remove('active'));
+  const defaultTabBtn = document.querySelector('.scan-tab-btn[data-target="tab-items"]');
+  if (defaultTabBtn) defaultTabBtn.classList.add('active');
+  const defaultTabContent = document.getElementById('tab-items');
+  if (defaultTabContent) defaultTabContent.classList.add('active');
+}
+
+// Cancel scanning and restart
+document.getElementById('cancel-scan-btn').addEventListener('click', resetScanUI);
 
 // Save to DB
 document.getElementById('save-expense-btn').addEventListener('click', async () => {
@@ -731,12 +743,10 @@ document.getElementById('save-expense-btn').addEventListener('click', async () =
     }
 
     showToast('支出を保存しました！');
-    scannedItems = [];
     
-    // Switch to Dashboard
+    // Switch to Dashboard and reset scan UI
     switchView('dashboard');
-    scanResultArea.style.display = 'none';
-    uploadZone.style.display = 'block';
+    resetScanUI();
 
   } catch (err) {
     console.error('Save failed:', err);
