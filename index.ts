@@ -265,6 +265,16 @@ app.post('/api/auth/login', async (req: any, res: any) => {
   }
 });
 
+app.delete('/api/auth/me', requireAuth, async (req: any, res: any) => {
+  try {
+    // req.user.id is validated by requireAuth
+    await prisma.user.delete({ where: { id: req.user.id } });
+    res.json({ success: true, message: 'Account deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Account deletion failed' });
+  }
+});
+
 // Tags API
 app.get('/api/tags', requireAuth, async (req: any, res: any) => {
   try {

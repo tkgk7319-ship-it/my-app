@@ -1024,6 +1024,35 @@ document.getElementById('auth-submit-btn').addEventListener('click', async (e) =
   }
 });
 
+const deleteAccountBtn = document.getElementById('delete-account-btn');
+if (deleteAccountBtn) {
+  deleteAccountBtn.addEventListener('click', async () => {
+    if (!confirm('本当にアカウントを削除しますか？\n\n※この操作は取り消せません。\n※あなたが登録した「すべての支出データ」と「カスタムカテゴリ」が完全に削除されます。')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('アカウントの削除に失敗しました。');
+
+      showToast('アカウントを完全に削除しました。');
+      
+      // Logout and reset
+      localStorage.removeItem('auth_token');
+      currentToken = null;
+      document.querySelector('.app-header').style.display = 'none';
+      switchView('auth');
+    } catch (err) {
+      console.error(err);
+      showToast(err.message, 'error');
+    }
+  });
+}
+
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', async () => {
   if (currentToken) {

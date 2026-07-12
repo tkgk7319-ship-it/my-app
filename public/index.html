@@ -345,7 +345,7 @@
         <div class="view-header">
           <div>
             <h1>設定</h1>
-            <p class="subtitle">カテゴリ（タグ）のカスタマイズ</p>
+            <p class="subtitle">カテゴリのカスタマイズとアカウント管理</p>
           </div>
         </div>
 
@@ -368,6 +368,18 @@
                 <!-- Rendered via JS -->
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="glass-card settings-card" style="margin-top: 24px;">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-user-shield"></i> アカウント管理</h2>
+          </div>
+          <div style="padding: 20px;">
+            <p style="color: var(--text-sub); margin-bottom: 15px; font-size: 0.9rem;">アカウントを削除すると、このアカウントで登録した「すべての支出データ」と「カスタムカテゴリ」が完全に削除され、復元できなくなります。</p>
+            <button class="btn btn-sm" id="delete-account-btn" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 10px 20px;">
+              <i class="fa-solid fa-user-xmark"></i> アカウントを完全に削除する
+            </button>
           </div>
         </div>
       </section>
