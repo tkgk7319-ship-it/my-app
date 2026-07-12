@@ -1,22 +1,21 @@
 {
-  "name": "my-app",
+  "name": "receipt-manager",
   "version": "1.0.0",
-  "type": "module",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "tsx index.ts",
-    "db:dev": "prisma dev"
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "devDependencies": {
-    "@types/node": "^26.1.1",
-    "prisma": "^7.8.0",
-    "tsx": "^4.23.0"
-  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "dotenv": "^17.4.2",
-    "ejs": "^6.0.1",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
-    "pg": "^8.22.0"
+    "multer": "^2.2.0",
+    "pg": "^8.22.0",
+    "tesseract.js": "^7.0.0"
   }
 }
