@@ -1487,6 +1487,8 @@ h1 {
 }
 .btn-delete-tag:hover {
   background: var(--danger-glow);
+}
+
 /* Scan Tabs UI */
 .scan-tabs {
   display: flex;
