@@ -221,7 +221,7 @@ app.post('/api/upload', upload.single('receipt'), async (req: any, res: any) => 
   let worker: any = null;
 
   try {
-    worker = await createWorker('jpn+eng');
+    worker = await createWorker('jpn');
     const { data: { text } } = await worker.recognize(imagePath);
     const parsedItems = parseOcrText(text);
 
