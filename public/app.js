@@ -8,11 +8,22 @@ let mediaStream = null;
 
 // DOM Elements
 const views = {
+  auth: document.getElementById('auth-view'),
   dashboard: document.getElementById('dashboard-view'),
   scan: document.getElementById('scan-view'),
   history: document.getElementById('history-view'),
   settings: document.getElementById('settings-view')
 };
+
+// --- Auth Logic ---
+let currentToken = localStorage.getItem('auth_token') || null;
+
+function getAuthHeaders(isJson = true) {
+  const headers = {};
+  if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+  if (isJson) headers['Content-Type'] = 'application/json';
+  return headers;
+}
 
 const navButtons = {
   dashboard: document.getElementById('nav-dashboard'),
@@ -71,12 +82,16 @@ function animateNumber(element, start, end, duration = 800) {
 // View switching logic
 function switchView(viewName) {
   // Hide all views, remove active from all nav buttons
-  Object.values(views).forEach(view => view.classList.remove('active'));
-  Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
+  Object.values(views).forEach(view => {
+    if (view) view.classList.remove('active');
+  });
+  Object.values(navButtons).forEach(btn => {
+    if (btn) btn.classList.remove('active');
+  });
   
   // Show target view and set button active
-  views[viewName].classList.add('active');
-  navButtons[viewName].classList.add('active');
+  if (views[viewName]) views[viewName].classList.add('active');
+  if (navButtons[viewName]) navButtons[viewName].classList.add('active');
   
   // Terminate camera if switching away from scan view
   if (viewName !== 'scan') {
@@ -96,8 +111,21 @@ function switchView(viewName) {
 
 // Setup Nav Event Listeners
 Object.keys(navButtons).forEach(key => {
-  navButtons[key].addEventListener('click', () => switchView(key));
+  if (navButtons[key]) {
+    navButtons[key].addEventListener('click', () => switchView(key));
+  }
 });
+
+// Logout Listener
+const logoutBtn = document.getElementById('nav-logout');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('auth_token');
+    currentToken = null;
+    document.querySelector('.app-header').style.display = 'none';
+    switchView('auth');
+  });
+}
 
 // Setup Scan View Tabs Event Listeners
 document.querySelectorAll('.scan-tab-btn').forEach(btn => {
@@ -118,7 +146,7 @@ document.querySelectorAll('.scan-tab-btn').forEach(btn => {
 // --- TAGS RETRIEVAL ---
 async function fetchTags() {
   try {
-    const response = await fetch('/api/tags');
+    const response = await fetch('/api/tags', { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch tags');
     availableTags = await response.json();
   } catch (err) {
@@ -141,8 +169,16 @@ async function loadDashboardData() {
   document.getElementById('dashboard-period-label').textContent = `期間: ${year}/${month}/01 - ${year}/${month}/${lastDay}`;
 
   try {
-    const response = await fetch(`/api/expenses?start_date=${startDate}&end_date=${endDate}`);
-    if (!response.ok) throw new Error('Failed to fetch monthly expenses');
+    const response = await fetch(`/api/expenses?start_date=${startDate}&end_date=${endDate}`, { headers: getAuthHeaders() });
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Unauthorized, redirect to login
+        document.querySelector('.app-header').style.display = 'none';
+        switchView('auth');
+        return;
+      }
+      throw new Error('Failed to fetch monthly expenses');
+    }
     const data = await response.json();
 
     // 1. Render Total Amount
@@ -258,23 +294,20 @@ function renderRecentExpenses(expenses) {
   });
 }
 
+// Delete Expense API Call
 async function deleteExpense(id) {
   try {
     const response = await fetch(`/api/expenses/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     if (!response.ok) throw new Error('Failed to delete expense');
-    showToast('支出を削除しました。');
-    
-    // Refresh current view
-    if (views.dashboard.classList.contains('active')) {
-      loadDashboardData();
-    } else if (views.history.classList.contains('active')) {
-      loadHistoryData();
-    }
+    showToast('支出データを削除しました。');
+    loadHistoryData(); // Reload list
+    loadDashboardData(); // Refresh dashboard
   } catch (err) {
     console.error('Delete error:', err);
-    showToast('支出の削除に失敗しました。', 'error');
+    showToast('削除に失敗しました。', 'error');
   }
 }
 
@@ -475,7 +508,10 @@ async function uploadAndScanImage(file) {
   try {
     const response = await fetch('/api/upload', {
       method: 'POST',
-      body: formData
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${currentToken}`
+      } // Exclude Content-Type for FormData
     });
 
     if (!response.ok) {
@@ -738,9 +774,7 @@ document.getElementById('save-expense-btn').addEventListener('click', async func
   try {
     const response = await fetch('/api/expenses', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload)
     });
 
@@ -771,8 +805,7 @@ document.getElementById('save-expense-btn').addEventListener('click', async func
 function setDefaultHistoryDates() {
   const startInput = document.getElementById('filter-start-date');
   const endInput = document.getElementById('filter-end-date');
-
-  // Default to this month
+  
   if (!startInput.value || !endInput.value) {
     const now = new Date();
     const year = now.getFullYear();
@@ -939,8 +972,67 @@ document.getElementById('quick-this-month-btn').addEventListener('click', () => 
 });
 
 
+// --- AUTH LOGIC ---
+document.querySelectorAll('.auth-tab').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    const mode = e.target.getAttribute('data-mode');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    submitBtn.textContent = mode === 'login' ? 'ログイン' : '新規登録';
+    submitBtn.setAttribute('data-mode', mode);
+  });
+});
+
+document.getElementById('auth-submit-btn').addEventListener('click', async (e) => {
+  const mode = e.target.getAttribute('data-mode') || 'login';
+  const usernameInput = document.getElementById('auth-username').value;
+  const passwordInput = document.getElementById('auth-password').value;
+
+  if (!usernameInput || !passwordInput) {
+    showToast('IDとパスワードを入力してください。', 'error');
+    return;
+  }
+
+  const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: usernameInput, password: passwordInput })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Authentication failed');
+    }
+
+    // Success
+    currentToken = data.token;
+    localStorage.setItem('auth_token', currentToken);
+    showToast('ログインしました！');
+    
+    // Switch to Dashboard
+    document.querySelector('.app-header').style.display = 'flex';
+    document.getElementById('auth-username').value = '';
+    document.getElementById('auth-password').value = '';
+    
+    await fetchTags();
+    switchView('dashboard');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+});
+
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', async () => {
-  await fetchTags();
-  loadDashboardData();
+  if (currentToken) {
+    // Has token, try to load data
+    document.querySelector('.app-header').style.display = 'flex';
+    switchView('dashboard');
+  } else {
+    // No token, show auth view
+    document.querySelector('.app-header').style.display = 'none';
+    switchView('auth');
+  }
 });

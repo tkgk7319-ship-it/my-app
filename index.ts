@@ -14,6 +14,34 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter, log: ["query"] });
 
+// 認証ユーティリティ
+const crypto = require('crypto');
+function hashPassword(password: string) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// 認証ミドルウェア
+async function requireAuth(req: any, res: any, next: any) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const user = await prisma.user.findUnique({ where: { token } });
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
+    req.user = user;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 8888;
 
@@ -202,21 +230,59 @@ function parseOcrText(text: string) {
 
 // --- API Endpoints ---
 
-// Tags API
-app.get('/api/tags', async (req: any, res: any) => {
+// Auth API
+app.post('/api/auth/register', async (req: any, res: any) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
   try {
-    const tags = await prisma.tag.findMany({ orderBy: { id: 'asc' } });
+    const hashedPassword = hashPassword(password);
+    const token = generateToken();
+    const user = await prisma.user.create({
+      data: { username, password: hashedPassword, token }
+    });
+    res.json({ success: true, token: user.token, username: user.username });
+  } catch (err: any) {
+    if (err.code === 'P2002') return res.status(400).json({ error: 'Username already taken' });
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/api/auth/login', async (req: any, res: any) => {
+  const { username, password } = req.body;
+  try {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || user.password !== hashPassword(password)) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    const token = generateToken();
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { token }
+    });
+    res.json({ success: true, token: updatedUser.token, username: updatedUser.username });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Tags API
+app.get('/api/tags', requireAuth, async (req: any, res: any) => {
+  try {
+    const tags = await prisma.tag.findMany({ 
+      where: { OR: [{ userId: null }, { userId: req.user.id }] },
+      orderBy: { id: 'asc' } 
+    });
     res.json(tags);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to retrieve tags: ' + err.message });
   }
 });
 
-app.post('/api/tags', async (req: any, res: any) => {
+app.post('/api/tags', requireAuth, async (req: any, res: any) => {
   const { name, color } = req.body;
   if (!name || !color) return res.status(400).json({ error: 'Name and color are required.' });
   try {
-    const tag = await prisma.tag.create({ data: { name, color } });
+    const tag = await prisma.tag.create({ data: { name, color, userId: req.user.id } });
     res.json({ success: true, tag });
   } catch (err: any) {
     if (err.code === 'P2002') return res.status(400).json({ error: 'Tag name already exists.' });
@@ -224,11 +290,15 @@ app.post('/api/tags', async (req: any, res: any) => {
   }
 });
 
-app.put('/api/tags/:id', async (req: any, res: any) => {
+app.put('/api/tags/:id', requireAuth, async (req: any, res: any) => {
   const { id } = req.params;
   const { name, color } = req.body;
   if (!name || !color) return res.status(400).json({ error: 'Name and color are required.' });
   try {
+    const existing = await prisma.tag.findUnique({ where: { id: parseInt(id, 10) } });
+    if (!existing || existing.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Cannot update global tags or tags you do not own.' });
+    }
     const tag = await prisma.tag.update({
       where: { id: parseInt(id, 10) },
       data: { name, color }
@@ -240,9 +310,13 @@ app.put('/api/tags/:id', async (req: any, res: any) => {
   }
 });
 
-app.delete('/api/tags/:id', async (req: any, res: any) => {
+app.delete('/api/tags/:id', requireAuth, async (req: any, res: any) => {
   const { id } = req.params;
   try {
+    const existing = await prisma.tag.findUnique({ where: { id: parseInt(id, 10) } });
+    if (!existing || existing.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Cannot delete global tags or tags you do not own.' });
+    }
     await prisma.tag.delete({ where: { id: parseInt(id, 10) } });
     res.json({ success: true, message: 'Tag deleted successfully.' });
   } catch (err: any) {
@@ -251,7 +325,7 @@ app.delete('/api/tags/:id', async (req: any, res: any) => {
 });
 
 // Upload and OCR
-app.post('/api/upload', upload.single('receipt'), async (req: any, res: any) => {
+app.post('/api/upload', requireAuth, upload.single('receipt'), async (req: any, res: any) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Please upload a receipt image.' });
   }
@@ -263,7 +337,9 @@ app.post('/api/upload', upload.single('receipt'), async (req: any, res: any) => 
     const { data: { text } } = await worker.recognize(imagePath);
     const parsedItems = parseOcrText(text);
 
-    const tags = await prisma.tag.findMany();
+    const tags = await prisma.tag.findMany({
+      where: { OR: [{ userId: null }, { userId: req.user.id }] }
+    });
     const tagMap: Record<string, number> = {};
     tags.forEach((t: any) => { tagMap[t.name] = t.id; });
     const otherTag = tags.find((t: any) => t.name === 'その他');
@@ -286,7 +362,7 @@ app.post('/api/upload', upload.single('receipt'), async (req: any, res: any) => 
 });
 
 // Save Expense
-app.post('/api/expenses', async (req: any, res: any) => {
+app.post('/api/expenses', requireAuth, async (req: any, res: any) => {
   const { date, memo, items } = req.body;
   if (!date) return res.status(400).json({ error: 'Date is required.' });
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -301,12 +377,12 @@ app.post('/api/expenses', async (req: any, res: any) => {
     // Process inline tag creation
     for (const item of items) {
       if (item.tag_id === 'new' && item.new_tag_name) {
-        let existingTag = await prisma.tag.findUnique({
-          where: { name: item.new_tag_name }
+        let existingTag = await prisma.tag.findFirst({
+          where: { name: item.new_tag_name, OR: [{ userId: null }, { userId: req.user.id }] }
         });
         if (!existingTag) {
           existingTag = await prisma.tag.create({
-            data: { name: item.new_tag_name, color: item.new_tag_color || '#868e96' }
+            data: { name: item.new_tag_name, color: item.new_tag_color || '#868e96', userId: req.user.id }
           });
         }
         item.tag_id = existingTag.id;
@@ -315,6 +391,7 @@ app.post('/api/expenses', async (req: any, res: any) => {
 
     const expense = await prisma.expense.create({
       data: {
+        userId: req.user.id,
         date,
         totalAmount,
         memo: memo || '',
@@ -338,7 +415,7 @@ app.post('/api/expenses', async (req: any, res: any) => {
 });
 
 // Get Expenses
-app.get('/api/expenses', async (req: any, res: any) => {
+app.get('/api/expenses', requireAuth, async (req: any, res: any) => {
   const { start_date, end_date } = req.query;
   if (!start_date || !end_date) {
     return res.status(400).json({ error: 'Both start_date and end_date are required.' });
@@ -346,7 +423,7 @@ app.get('/api/expenses', async (req: any, res: any) => {
 
   try {
     const expenses = await prisma.expense.findMany({
-      where: { date: { gte: String(start_date), lte: String(end_date) } },
+      where: { userId: req.user.id, date: { gte: String(start_date), lte: String(end_date) } },
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       include: { items: { include: { tag: true } } }
     });
@@ -403,9 +480,13 @@ app.get('/api/expenses', async (req: any, res: any) => {
 });
 
 // Delete Expense
-app.delete('/api/expenses/:id', async (req: any, res: any) => {
+app.delete('/api/expenses/:id', requireAuth, async (req: any, res: any) => {
   const { id } = req.params;
   try {
+    const expense = await prisma.expense.findUnique({ where: { id: parseInt(id, 10) } });
+    if (!expense || expense.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Cannot delete expenses you do not own.' });
+    }
     await prisma.expense.delete({ where: { id: parseInt(id, 10) } });
     res.json({ success: true, message: 'Expense deleted successfully.' });
   } catch (err: any) {

@@ -1563,3 +1563,51 @@ h1 {
   background-color: #1e293b;
   color: #ffffff;
 }
+
+/* Auth View Styles */
+.auth-container {
+  max-width: 400px;
+  margin: 10vh auto;
+  padding: 40px 30px;
+  text-align: center;
+}
+
+.auth-header h2 {
+  font-family: var(--font-family-display);
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.auth-header p {
+  color: var(--text-sub);
+  margin-bottom: 30px;
+  font-size: 0.9rem;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 25px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.auth-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  padding: 12px 0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  border-bottom: 2px solid transparent;
+}
+
+.auth-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  font-weight: 600;
+}
+
+.auth-form-container .form-group {
+  text-align: left;
+}

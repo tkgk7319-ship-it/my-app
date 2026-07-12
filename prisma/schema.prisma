@@ -8,20 +8,29 @@ datasource db {
 }
 
 model User {
-  id   Int    @id @default(autoincrement())
-  name String
-  age  Int?
+  id       Int       @id @default(autoincrement())
+  username String    @unique
+  password String
+  token    String?   @unique
+  expenses Expense[]
+  tags     Tag[]
 }
 
 model Tag {
   id           Int           @id @default(autoincrement())
-  name         String        @unique
+  name         String
   color        String
+  userId       Int?          @map("user_id")
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenseItems ExpenseItem[]
+
+  @@unique([name, userId]) // Allow same tag name for different users
 }
 
 model Expense {
   id           Int           @id @default(autoincrement())
+  userId       Int           @map("user_id")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   date         String
   totalAmount  Int           @default(0) @map("total_amount")
   memo         String?
