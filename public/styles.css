@@ -1607,20 +1607,6 @@ h1 {
   gap: 24px;
 }
 
-@media (min-width: 1024px) {
-  .scan-unified-layout {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .scan-unified-layout > #tab-info {
-    flex: 0 0 350px; /* Fixed width for the form on large screens */
-  }
-  .scan-unified-layout > #tab-items {
-    flex: 1;
-    min-width: 0; /* Prevent flex overflow */
-  }
-}
-
 /* Bottom Actions Panel for Scan */
 .scan-bottom-actions {
   margin-top: 24px;
