@@ -898,6 +898,16 @@ h1 {
 }
 
 /* Items List Table */
+/* Responsive Table Wrappers */
+.items-list-wrapper,
+.tag-list-wrapper,
+.accordion-inner {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  margin-bottom: 8px; /* Slight margin to accommodate scrollbar if visible */
+}
+
 .items-table {
   width: 100%;
   border-collapse: collapse;
