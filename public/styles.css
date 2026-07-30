@@ -946,7 +946,7 @@ h1 {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  min-width: 600px; /* Reduced from 800px to prevent excessive horizontal scrolling */
+  table-layout: auto;
 }
 
 /* Responsive Card Layout for items table on mobile (to eliminate horizontal scroll) */
@@ -985,9 +985,9 @@ h1 {
     border: none;
     padding: 8px 0;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-align: right;
+    align-items: flex-start;
+    flex-direction: column;
+    text-align: left;
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
 
@@ -997,17 +997,16 @@ h1 {
 
   .items-table td::before {
     content: attr(data-label);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-sub);
-    flex-shrink: 0;
-    margin-right: 16px;
+    margin-bottom: 4px;
   }
   
   .items-table .table-input, .items-table .tag-selector {
     width: 100%;
-    max-width: 200px;
-    text-align: right;
+    max-width: 100%;
+    text-align: left;
   }
 }
 
