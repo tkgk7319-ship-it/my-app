@@ -101,6 +101,14 @@ function switchView(viewName) {
     const scanResultArea = document.getElementById('scan-result-area');
     const scanLoading = document.getElementById('scan-loading');
     
+    // Change titles
+    const viewTitle = document.getElementById('scan-view-title');
+    const viewSubtitle = document.getElementById('scan-view-subtitle');
+    const itemsTitle = document.getElementById('scan-items-title');
+    if (viewTitle) viewTitle.innerHTML = '<i class="fa-solid fa-keyboard" style="margin-right:10px;"></i>手動入力';
+    if (viewSubtitle) viewSubtitle.textContent = '手動で商品名や金額を入力して家計簿に保存します';
+    if (itemsTitle) itemsTitle.innerHTML = '<i class="fa-solid fa-list-check"></i>入力する商品一覧';
+    
     if (uploadZone) uploadZone.style.display = 'none';
     if (scanLoading) scanLoading.style.display = 'none';
     if (scanResultArea) scanResultArea.style.display = 'block';
@@ -144,6 +152,14 @@ function switchView(viewName) {
     if (uploadZone) uploadZone.style.display = 'block';
     if (scanLoading) scanLoading.style.display = 'none';
     if (scanResultArea) scanResultArea.style.display = 'none';
+
+    // Reset titles
+    const viewTitle = document.getElementById('scan-view-title');
+    const viewSubtitle = document.getElementById('scan-view-subtitle');
+    const itemsTitle = document.getElementById('scan-items-title');
+    if (viewTitle) viewTitle.textContent = 'レシート読込';
+    if (viewSubtitle) viewSubtitle.textContent = '画像から商品を読み取って保存します';
+    if (itemsTitle) itemsTitle.innerHTML = '<i class="fa-solid fa-list-check"></i>読み取った商品一覧';
   }
 
   // Terminate camera if switching away from scan view
