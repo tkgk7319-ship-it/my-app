@@ -915,6 +915,11 @@ h1 {
   min-width: 800px; /* Increased from 600px to secure the Product Name column space */
 }
 
+/* Override min-width for simple tables like tag settings to prevent unnecessary scroll */
+.tag-list-wrapper .items-table {
+  min-width: unset;
+}
+
 .items-table th, .items-table td {
   padding: 14px 12px;
   border-bottom: 1px solid var(--panel-border);
