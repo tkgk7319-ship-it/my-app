@@ -340,10 +340,11 @@ async function loadTrendChart(period) {
     const lastDay = new Date(year, currentDashboardMonth.getMonth() + 1, 0).getDate();
     endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
   } else if (period === 'week') {
-    // Last 3 months for weekly
-    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0); // End of this month
-    const start = new Date(today.getFullYear(), today.getMonth() - 2, 1); // Start of 2 months ago (3 months total)
-    startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
+    // Last 3-4 weeks (this week, last week, week before last)
+    const end = new Date(today);
+    const start = new Date(today);
+    start.setDate(today.getDate() - 21); // 3 weeks ago
+    startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
     endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
   } else if (period === 'month') {
     // Last 12 months for monthly
