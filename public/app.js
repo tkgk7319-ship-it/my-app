@@ -1134,6 +1134,73 @@ document.getElementById('quick-this-month-btn').addEventListener('click', () => 
 });
 
 
+// --- SETTINGS CONTROLLERS ---
+
+async function loadSettingsData() {
+  await fetchTags();
+  renderSettingsTags();
+}
+
+function renderSettingsTags() {
+  const tbody = document.getElementById('settings-tag-list');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  availableTags.forEach(tag => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div style="width: 20px; height: 20px; border-radius: 4px; background-color: ${tag.color || '#868e96'};"></div>
+      </td>
+      <td>${tag.name}</td>
+      <td>
+        ${tag.name !== 'その他' ? `<button class="btn btn-sm btn-secondary delete-tag-btn" data-id="${tag.id}"><i class="fa-solid fa-trash-can"></i>削除</button>` : '<span style="color:var(--text-muted); font-size: 0.8rem;">必須</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Attach delete listeners
+  tbody.querySelectorAll('.delete-tag-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      if (confirm('このカテゴリを削除しますか？')) {
+        try {
+          const res = await fetch(`/api/tags/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('Failed to delete tag');
+          showToast('カテゴリを削除しました');
+          await loadSettingsData(); // Reload
+        } catch (err) {
+          console.error(err);
+          showToast('カテゴリの削除に失敗しました', 'error');
+        }
+      }
+    });
+  });
+}
+
+const addTagBtn = document.getElementById('add-tag-btn');
+if (addTagBtn) {
+  addTagBtn.addEventListener('click', async () => {
+    const name = prompt('新しいカテゴリ名を入力してください:');
+    if (!name) return;
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ name: name, color: '#3b82f6' }) // Default blue for now
+      });
+      if (!res.ok) throw new Error('Failed to add tag');
+      showToast('カテゴリを追加しました');
+      await loadSettingsData();
+    } catch (err) {
+      console.error(err);
+      showToast('カテゴリの追加に失敗しました', 'error');
+    }
+  });
+}
+
+
 // --- AUTH LOGIC ---
 document.querySelectorAll('.auth-tab').forEach(btn => {
   btn.addEventListener('click', (e) => {
