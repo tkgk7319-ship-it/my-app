@@ -424,6 +424,52 @@ app.post('/api/expenses', requireAuth, async (req: any, res: any) => {
   }
 });
 
+// Get Top Items Analysis
+app.get('/api/analysis/top-items', requireAuth, async (req: any, res: any) => {
+  const { start_date, end_date } = req.query;
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: 'Both start_date and end_date are required.' });
+  }
+
+  try {
+    const items = await prisma.expenseItem.findMany({
+      where: {
+        isSelected: 1,
+        expense: {
+          userId: req.user.id,
+          date: { gte: String(start_date), lte: String(end_date) }
+        }
+      },
+      include: { tag: true }
+    });
+
+    const grouped: Record<string, { name: string, total_amount: number, quantity: number, tag_name: string, tag_color: string }> = {};
+
+    items.forEach((item: any) => {
+      const name = item.name.trim();
+      if (!name) return;
+      
+      if (!grouped[name]) {
+        grouped[name] = {
+          name: name,
+          total_amount: 0,
+          quantity: 0,
+          tag_name: item.tag?.name || '未分類',
+          tag_color: item.tag?.color || '#868e96'
+        };
+      }
+      grouped[name].total_amount += item.amount;
+      grouped[name].quantity += (item.quantity || 1);
+    });
+
+    const sorted = Object.values(grouped).sort((a, b) => b.total_amount - a.total_amount).slice(0, 20);
+
+    res.json({ success: true, top_items: sorted });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to analyze top items: ' + err.message });
+  }
+});
+
 // Get Expenses
 app.get('/api/expenses', requireAuth, async (req: any, res: any) => {
   const { start_date, end_date } = req.query;

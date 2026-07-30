@@ -244,8 +244,11 @@ async function loadDashboardData() {
     renderCategoryChart(data.categories, data.total_spent);
     // Render Trend Chart separately based on selected period
     loadTrendChart(currentTrendPeriod);
+    
+    // 3. Render Top Items
+    loadTopItems(startDate, endDate);
 
-    // 3. Render Recent Expenses
+    // 4. Render Recent Expenses
     renderRecentExpenses(data.expenses);
 
   } catch (err) {
@@ -554,6 +557,56 @@ async function deleteExpense(id) {
   } catch (err) {
     console.error('Delete error:', err);
     showToast('削除に失敗しました。', 'error');
+  }
+}
+
+// Load Top Items for Dashboard
+async function loadTopItems(startDate, endDate) {
+  const container = document.getElementById('top-items-list');
+  if (!container) return;
+  
+  container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> 集計中...</div>';
+
+  try {
+    const response = await fetch(`/api/analysis/top-items?start_date=${startDate}&end_date=${endDate}`, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('Failed to fetch top items');
+    const data = await response.json();
+    
+    container.innerHTML = '';
+    
+    if (data.top_items.length === 0) {
+      container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">データがありません</div>';
+      return;
+    }
+
+    data.top_items.forEach((item, index) => {
+      const rank = index + 1;
+      let rankClass = '';
+      if (rank === 1) rankClass = 'rank-1';
+      else if (rank === 2) rankClass = 'rank-2';
+      else if (rank === 3) rankClass = 'rank-3';
+
+      const div = document.createElement('div');
+      div.className = 'top-item-row';
+      div.innerHTML = `
+        <div class="top-item-rank ${rankClass}">${rank}</div>
+        <div class="top-item-details">
+          <div class="top-item-name">${item.name}</div>
+          <div class="top-item-meta">
+            <span class="top-item-tag" style="background-color: ${item.tag_color};">${item.tag_name}</span>
+          </div>
+        </div>
+        <div class="top-item-stats">
+          <span class="top-item-amount">¥${formatCurrency(item.total_amount)}</span>
+          <span class="top-item-count">購入回数: ${item.quantity}回</span>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error('Error loading top items:', err);
+    container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--danger);">取得に失敗しました</div>';
   }
 }
 
