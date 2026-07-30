@@ -912,7 +912,7 @@ h1 {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  min-width: 800px; /* Increased from 600px to secure the Product Name column space */
+  min-width: 600px; /* Reduced from 800px to prevent excessive horizontal scrolling */
 }
 
 /* Override min-width for simple tables like tag settings to prevent unnecessary scroll */
