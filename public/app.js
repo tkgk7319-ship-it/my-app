@@ -34,6 +34,7 @@ Chart.defaults.font.family = "'Inter', sans-serif";
 const navButtons = {
   dashboard: document.getElementById('nav-dashboard'),
   scan: document.getElementById('nav-scan'),
+  manual: document.getElementById('nav-manual'),
   history: document.getElementById('nav-history'),
   settings: document.getElementById('nav-settings')
 };
@@ -87,6 +88,42 @@ function animateNumber(element, start, end, duration = 800) {
 
 // View switching logic
 function switchView(viewName) {
+  if (viewName === 'manual') {
+    // Treat 'manual' as a special case of 'scan' view
+    switchView('scan');
+    
+    // Override nav active state
+    if (navButtons['scan']) navButtons['scan'].classList.remove('active');
+    if (navButtons['manual']) navButtons['manual'].classList.add('active');
+    
+    // Setup manual input UI
+    const uploadZone = document.getElementById('scan-upload-area');
+    const scanResultArea = document.getElementById('scan-result-area');
+    const scanLoading = document.getElementById('scan-loading');
+    
+    if (uploadZone) uploadZone.style.display = 'none';
+    if (scanLoading) scanLoading.style.display = 'none';
+    if (scanResultArea) scanResultArea.style.display = 'block';
+
+    const defaultTag = availableTags.find(t => t.name === 'その他') || availableTags[0];
+    const defaultTagId = defaultTag ? defaultTag.id : null;
+
+    scannedItems = [{
+      name: '',
+      unit_price: 0,
+      quantity: 1,
+      amount: 0,
+      is_selected: 1,
+      tag_id: defaultTagId
+    }];
+
+    document.getElementById('expense-date').valueAsDate = new Date();
+    document.getElementById('expense-memo').value = '';
+
+    renderOcrItems();
+    return;
+  }
+
   // Hide all views, remove active from all nav buttons
   Object.values(views).forEach(view => {
     if (view) view.classList.remove('active');
@@ -99,8 +136,18 @@ function switchView(viewName) {
   if (views[viewName]) views[viewName].classList.add('active');
   if (navButtons[viewName]) navButtons[viewName].classList.add('active');
   
+  // Reset scan view to upload state if switching to standard scan
+  if (viewName === 'scan') {
+    const uploadZone = document.getElementById('scan-upload-area');
+    const scanResultArea = document.getElementById('scan-result-area');
+    const scanLoading = document.getElementById('scan-loading');
+    if (uploadZone) uploadZone.style.display = 'block';
+    if (scanLoading) scanLoading.style.display = 'none';
+    if (scanResultArea) scanResultArea.style.display = 'none';
+  }
+
   // Terminate camera if switching away from scan view
-  if (viewName !== 'scan') {
+  if (viewName !== 'scan' && viewName !== 'manual') {
     stopCamera();
   }
 
@@ -580,31 +627,7 @@ document.getElementById('crop-confirm-btn').addEventListener('click', () => {
   }, 'image/jpeg', 0.9);
 });
 
-// --- MANUAL INPUT WORKFLOW ---
-const manualInputBtn = document.getElementById('manual-input-btn');
-if (manualInputBtn) {
-  manualInputBtn.addEventListener('click', () => {
-    uploadZone.style.display = 'none';
-    scanResultArea.style.display = 'block';
-
-    const defaultTag = availableTags.find(t => t.name === 'その他') || availableTags[0];
-    const defaultTagId = defaultTag ? defaultTag.id : null;
-
-    scannedItems = [{
-      name: '',
-      unit_price: 0,
-      quantity: 1,
-      amount: 0,
-      is_selected: 1,
-      tag_id: defaultTagId
-    }];
-
-    document.getElementById('expense-date').valueAsDate = new Date();
-    document.getElementById('expense-memo').value = '';
-
-    renderOcrItems();
-  });
-}
+// Removed old manual input workflow from upload area
 
 // Send file to server for OCR
 async function uploadAndScanImage(file) {
