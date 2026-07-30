@@ -196,22 +196,6 @@ if (logoutBtn) {
   });
 }
 
-// Setup Scan View Tabs Event Listeners
-document.querySelectorAll('.scan-tab-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    // Remove active class from all tab buttons and contents
-    document.querySelectorAll('.scan-tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.scan-tab-content').forEach(c => c.classList.remove('active'));
-
-    // Add active class to clicked button
-    e.currentTarget.classList.add('active');
-
-    // Show target content
-    const targetId = e.currentTarget.getAttribute('data-target');
-    document.getElementById(targetId).classList.add('active');
-  });
-});
-
 // --- TAGS RETRIEVAL ---
 async function fetchTags() {
   try {
@@ -884,14 +868,6 @@ function resetScanUI() {
   scanResultArea.style.display = 'none';
   uploadZone.style.display = 'block';
   document.getElementById('file-input').value = ''; // Reset file input
-
-  // Reset tabs to default (items tab)
-  document.querySelectorAll('.scan-tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.scan-tab-content').forEach(c => c.classList.remove('active'));
-  const defaultTabBtn = document.querySelector('.scan-tab-btn[data-target="tab-items"]');
-  if (defaultTabBtn) defaultTabBtn.classList.add('active');
-  const defaultTabContent = document.getElementById('tab-items');
-  if (defaultTabContent) defaultTabContent.classList.add('active');
 }
 
 // Cancel scanning and restart
