@@ -25,6 +25,12 @@ function getAuthHeaders(isJson = true) {
   return headers;
 }
 
+// --- Chart Instances ---
+let categoryChartInstance = null;
+let dailyChartInstance = null;
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
 const navButtons = {
   dashboard: document.getElementById('nav-dashboard'),
   scan: document.getElementById('nav-scan'),
@@ -186,8 +192,9 @@ async function loadDashboardData() {
     const currentVal = parseInt(totalDisplay.textContent.replace(/,/g, ''), 10) || 0;
     animateNumber(totalDisplay, currentVal, data.total_spent);
 
-    // 2. Render SVG Donut Chart and Legend
-    renderDonutChart(data.categories, data.total_spent);
+    // 2. Render Charts
+    renderCategoryChart(data.categories, data.total_spent);
+    renderDailyChart(data.daily);
 
     // 3. Render Recent Expenses
     renderRecentExpenses(data.expenses);
@@ -198,60 +205,133 @@ async function loadDashboardData() {
   }
 }
 
-function renderDonutChart(categories, totalAmount) {
-  const donutSegments = document.getElementById('donut-segments');
-  const legendList = document.getElementById('chart-legend-list');
-  const totalLabel = document.getElementById('chart-total-label');
+function renderCategoryChart(categories, totalAmount) {
+  const ctx = document.getElementById('category-chart');
+  if (!ctx) return;
   
-  donutSegments.innerHTML = '';
-  legendList.innerHTML = '';
-  totalLabel.textContent = `¥${formatCurrency(totalAmount)}`;
+  if (categoryChartInstance) {
+    categoryChartInstance.destroy();
+  }
 
   if (!categories || categories.length === 0 || totalAmount === 0) {
-    legendList.innerHTML = '<p class="no-data-msg">データがありません</p>';
-    // Draw grey placeholder donut
-    donutSegments.innerHTML = `
-      <circle cx="100" cy="100" r="80" fill="transparent" stroke="rgba(255,255,255,0.05)" stroke-width="20"/>
-    `;
+    categoryChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['データなし'],
+        datasets: [{
+          data: [1],
+          backgroundColor: ['rgba(255, 255, 255, 0.05)'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        }
+      }
+    });
     return;
   }
 
-  const r = 80;
-  const circumference = 2 * Math.PI * r; // ~502.65
-  let currentOffset = 0;
+  const labels = categories.map(cat => cat.name);
+  const data = categories.map(cat => cat.amount);
+  const bgColors = categories.map(cat => cat.color);
 
-  categories.forEach(cat => {
-    const percentage = cat.amount / totalAmount;
-    const strokeLength = percentage * circumference;
-    const strokeOffset = circumference - currentOffset;
+  categoryChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: bgColors,
+        borderColor: '#080b16', // match background
+        borderWidth: 2,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: '#ffffff', padding: 20 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const val = context.raw;
+              const perc = Math.round((val / totalAmount) * 100);
+              return ` ${context.label}: ¥${formatCurrency(val)} (${perc}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
 
-    // Create SVG path/circle segment
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', '100');
-    circle.setAttribute('cy', '100');
-    circle.setAttribute('r', String(r));
-    circle.setAttribute('fill', 'transparent');
-    circle.setAttribute('stroke', cat.color);
-    circle.setAttribute('stroke-width', '20');
-    circle.setAttribute('stroke-dasharray', `${strokeLength} ${circumference}`);
-    circle.setAttribute('stroke-dashoffset', String(strokeOffset));
-    circle.style.transition = 'stroke-dashoffset 0.8s ease';
-    
-    donutSegments.appendChild(circle);
-    currentOffset += strokeLength;
+function renderDailyChart(dailyData) {
+  const ctx = document.getElementById('daily-chart');
+  if (!ctx) return;
 
-    // Create Legend Item
-    const legendItem = document.createElement('div');
-    legendItem.className = 'legend-item';
-    legendItem.innerHTML = `
-      <div class="legend-info">
-        <div class="legend-color" style="background-color: ${cat.color}"></div>
-        <span>${cat.name}</span>
-        <span class="legend-percentage">${Math.round(percentage * 100)}%</span>
-      </div>
-      <span class="legend-amount">¥${formatCurrency(cat.amount)}</span>
-    `;
-    legendList.appendChild(legendItem);
+  if (dailyChartInstance) {
+    dailyChartInstance.destroy();
+  }
+
+  if (!dailyData || dailyData.length === 0) {
+    // Empty state could be handled, but Chart.js handles empty arrays gracefully
+  }
+
+  // Reverse so it reads chronologically from left to right (since dailyData might be sorted desc)
+  const sortedData = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
+  
+  const labels = sortedData.map(d => {
+    // Convert YYYY-MM-DD to MM/DD
+    const parts = d.date.split('-');
+    return parts.length === 3 ? `${parseInt(parts[1])}/${parseInt(parts[2])}` : d.date;
+  });
+  const data = sortedData.map(d => d.amount);
+
+  dailyChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '日別支出',
+        data: data,
+        backgroundColor: '#8b5cf6', // primary color
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#94a3b8' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return ` ¥${formatCurrency(context.raw)}`;
+            }
+          }
+        }
+      }
+    }
   });
 }
 
