@@ -708,13 +708,21 @@ function renderOcrItems() {
     if (item.unit_price === undefined) item.unit_price = item.amount || 0;
     if (item.quantity === undefined) item.quantity = 1;
 
+    // Ensure tag_id is set
+    if (item.tag_id === undefined) {
+      // Try to match suggested_tag if present, else fallback to 'その他' or first tag
+      const matchedTag = availableTags.find(t => t.name === item.suggested_tag);
+      const defaultTag = availableTags.find(t => t.name === 'その他') || availableTags[0];
+      item.tag_id = matchedTag ? matchedTag.id : (defaultTag ? defaultTag.id : null);
+    }
+
     // Generate Tag Options
     let tagOptions = '';
     availableTags.forEach(tag => {
-      const selectedAttr = item.tag_id === tag.id ? 'selected' : '';
+      const selectedAttr = String(item.tag_id) === String(tag.id) ? 'selected' : '';
       tagOptions += `<option value="${tag.id}" ${selectedAttr}>${tag.name}</option>`;
     });
-    const newSelectedAttr = item.tag_id === 'new' ? 'selected' : '';
+    const newSelectedAttr = String(item.tag_id) === 'new' ? 'selected' : '';
     tagOptions += `<option value="new" ${newSelectedAttr}>＋ 新規カテゴリ</option>`;
 
     tr.innerHTML = `
@@ -857,7 +865,8 @@ function calculateScanTotal() {
 
 // Add blank row
 document.getElementById('add-item-btn').addEventListener('click', () => {
-  const defaultTagId = availableTags.length > 0 ? availableTags.find(t => t.name === 'その他').id : null;
+  const defaultTag = availableTags.find(t => t.name === 'その他') || availableTags[0];
+  const defaultTagId = defaultTag ? defaultTag.id : null;
   scannedItems.push({
     name: '新規商品',
     unit_price: 0,
