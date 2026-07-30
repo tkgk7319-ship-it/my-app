@@ -915,6 +915,68 @@ h1 {
   min-width: 600px; /* Reduced from 800px to prevent excessive horizontal scrolling */
 }
 
+/* Responsive Card Layout for items table on mobile (to eliminate horizontal scroll) */
+@media (max-width: 768px) {
+  .items-table, 
+  .items-table thead, 
+  .items-table tbody, 
+  .items-table th, 
+  .items-table td, 
+  .items-table tr {
+    display: block;
+    width: 100%;
+  }
+  
+  .items-table {
+    min-width: 0;
+  }
+  
+  .items-list-wrapper {
+    overflow-x: hidden !important;
+  }
+
+  .items-table thead tr {
+    display: none;
+  }
+
+  .items-table tr {
+    margin-bottom: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--border-radius-sm);
+    padding: 12px;
+  }
+
+  .items-table td {
+    border: none;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: right;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .items-table td:last-child {
+    border-bottom: none;
+  }
+
+  .items-table td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-sub);
+    flex-shrink: 0;
+    margin-right: 16px;
+  }
+  
+  .items-table .table-input, .items-table .tag-selector {
+    width: 100%;
+    max-width: 200px;
+    text-align: right;
+  }
+}
+
 /* Override min-width for simple tables like tag settings to prevent unnecessary scroll */
 .tag-list-wrapper .items-table {
   min-width: unset;

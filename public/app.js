@@ -710,22 +710,22 @@ function renderOcrItems() {
     tagOptions += `<option value="new" ${newSelectedAttr}>＋ 新規カテゴリ</option>`;
 
     tr.innerHTML = `
-      <td>
+      <td data-label="選択">
         <div class="custom-checkbox ${item.is_selected ? 'checked' : ''}" data-index="${index}"></div>
       </td>
-      <td>
+      <td data-label="商品名">
         <input type="text" class="table-input" value="${item.name}" data-field="name" data-index="${index}">
       </td>
-      <td>
+      <td data-label="単価">
         <input type="number" class="table-input table-input-amount" value="${item.unit_price}" data-field="unit_price" data-index="${index}">
       </td>
-      <td>
+      <td data-label="数量">
         <input type="number" class="table-input" style="text-align: center;" value="${item.quantity}" data-field="quantity" min="1" data-index="${index}">
       </td>
-      <td>
+      <td data-label="金額">
         <input type="number" class="table-input table-input-amount" value="${item.amount}" data-field="amount" data-index="${index}" readonly style="opacity: 0.8;">
       </td>
-      <td>
+      <td data-label="カテゴリ">
         <select class="tag-selector" data-index="${index}">
           ${tagOptions}
         </select>
@@ -734,7 +734,7 @@ function renderOcrItems() {
           <input type="text" class="table-input" value="${item.new_tag_name || ''}" placeholder="カテゴリ名" data-field="new_tag_name" data-index="${index}" style="padding: 4px; font-size: 12px;">
         </div>
       </td>
-      <td>
+      <td data-label="削除">
         <button class="delete-row-btn remove-item-btn" data-index="${index}" title="削除">
           <i class="fa-solid fa-trash-can"></i>
         </button>
