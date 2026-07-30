@@ -580,6 +580,32 @@ document.getElementById('crop-confirm-btn').addEventListener('click', () => {
   }, 'image/jpeg', 0.9);
 });
 
+// --- MANUAL INPUT WORKFLOW ---
+const manualInputBtn = document.getElementById('manual-input-btn');
+if (manualInputBtn) {
+  manualInputBtn.addEventListener('click', () => {
+    uploadZone.style.display = 'none';
+    scanResultArea.style.display = 'block';
+
+    const defaultTag = availableTags.find(t => t.name === 'その他') || availableTags[0];
+    const defaultTagId = defaultTag ? defaultTag.id : null;
+
+    scannedItems = [{
+      name: '',
+      unit_price: 0,
+      quantity: 1,
+      amount: 0,
+      is_selected: 1,
+      tag_id: defaultTagId
+    }];
+
+    document.getElementById('expense-date').valueAsDate = new Date();
+    document.getElementById('expense-memo').value = '';
+
+    renderOcrItems();
+  });
+}
+
 // Send file to server for OCR
 async function uploadAndScanImage(file) {
   const formData = new FormData();
