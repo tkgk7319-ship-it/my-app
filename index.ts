@@ -462,7 +462,12 @@ app.get('/api/analysis/top-items', requireAuth, async (req: any, res: any) => {
       grouped[name].quantity += (item.quantity || 1);
     });
 
-    const sorted = Object.values(grouped).sort((a, b) => b.total_amount - a.total_amount).slice(0, 20);
+    const sorted = Object.values(grouped).sort((a, b) => {
+      if (b.quantity === a.quantity) {
+        return b.total_amount - a.total_amount;
+      }
+      return b.quantity - a.quantity;
+    }).slice(0, 20);
 
     res.json({ success: true, top_items: sorted });
   } catch (err: any) {
