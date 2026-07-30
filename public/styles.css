@@ -140,6 +140,40 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+.chart-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-toggles {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.chart-toggles .toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-sub);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.chart-toggles .toggle-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.chart-content {
+  padding-top: 8px;
+}
+
 .nav-menu {
   display: flex;
   flex-direction: column;

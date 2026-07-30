@@ -4,6 +4,7 @@
 let availableTags = [];
 let scannedItems = [];
 let currentDashboardMonth = new Date(); // Defaults to today
+let currentTrendPeriod = 'day'; // 'day', 'week', 'month'
 let mediaStream = null;
 
 // DOM Elements
@@ -241,7 +242,8 @@ async function loadDashboardData() {
 
     // 2. Render Charts
     renderCategoryChart(data.categories, data.total_spent);
-    renderDailyChart(data.daily);
+    // Render Trend Chart separately based on selected period
+    loadTrendChart(currentTrendPeriod);
 
     // 3. Render Recent Expenses
     renderRecentExpenses(data.expenses);
@@ -321,7 +323,70 @@ function renderCategoryChart(categories, totalAmount) {
   });
 }
 
-function renderDailyChart(dailyData) {
+// Load and Render Trend Chart
+async function loadTrendChart(period) {
+  currentTrendPeriod = period;
+  
+  // Calculate date range based on period
+  const today = new Date();
+  let startDate = '';
+  let endDate = '';
+  
+  if (period === 'day') {
+    // Current viewed month (same as dashboard)
+    const year = currentDashboardMonth.getFullYear();
+    const month = String(currentDashboardMonth.getMonth() + 1).padStart(2, '0');
+    startDate = `${year}-${month}-01`;
+    const lastDay = new Date(year, currentDashboardMonth.getMonth() + 1, 0).getDate();
+    endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+  } else if (period === 'week') {
+    // Last 3 months for weekly
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0); // End of this month
+    const start = new Date(today.getFullYear(), today.getMonth() - 2, 1); // Start of 2 months ago (3 months total)
+    startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
+    endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+  } else if (period === 'month') {
+    // Last 12 months for monthly
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const start = new Date(today.getFullYear() - 1, today.getMonth() + 1, 1);
+    startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
+    endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+  }
+
+  try {
+    const response = await fetch(`/api/expenses?start_date=${startDate}&end_date=${endDate}`, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('Failed to fetch trend data');
+    const data = await response.json();
+    
+    // Grouping logic
+    let groupedData = {};
+    
+    data.expenses.forEach(exp => {
+      let key = '';
+      if (period === 'day') {
+        key = exp.date;
+      } else if (period === 'week') {
+        // Simple grouping by week of year, or just by "Week starting Monday"
+        const d = new Date(exp.date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        const monday = new Date(d.setDate(diff));
+        key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+      } else if (period === 'month') {
+        key = exp.date.substring(0, 7); // YYYY-MM
+      }
+      
+      groupedData[key] = (groupedData[key] || 0) + exp.total_amount;
+    });
+
+    const aggregatedArray = Object.keys(groupedData).map(k => ({ date: k, amount: groupedData[k] }));
+    renderTrendChart(aggregatedArray, period);
+  } catch (err) {
+    console.error('Error loading trend chart:', err);
+  }
+}
+
+function renderTrendChart(trendData, period) {
   const ctx = document.getElementById('daily-chart');
   if (!ctx) return;
 
@@ -329,18 +394,27 @@ function renderDailyChart(dailyData) {
     dailyChartInstance.destroy();
   }
 
-  if (!dailyData || dailyData.length === 0) {
-    // Empty state could be handled, but Chart.js handles empty arrays gracefully
+  if (!trendData || trendData.length === 0) {
+    // Empty handled gracefully
   }
 
-  // Reverse so it reads chronologically from left to right (since dailyData might be sorted desc)
-  const sortedData = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
+  // Sort chronologically
+  const sortedData = [...trendData].sort((a, b) => a.date.localeCompare(b.date));
   
   const labels = sortedData.map(d => {
-    // Convert YYYY-MM-DD to MM/DD
-    const parts = d.date.split('-');
-    return parts.length === 3 ? `${parseInt(parts[1])}/${parseInt(parts[2])}` : d.date;
+    if (period === 'day') {
+      const parts = d.date.split('-');
+      return parts.length === 3 ? `${parseInt(parts[1])}/${parseInt(parts[2])}` : d.date;
+    } else if (period === 'week') {
+      const parts = d.date.split('-');
+      return parts.length === 3 ? `${parseInt(parts[1])}/${parseInt(parts[2])}週` : d.date;
+    } else if (period === 'month') {
+      const parts = d.date.split('-');
+      return parts.length >= 2 ? `${parseInt(parts[1])}月` : d.date;
+    }
+    return d.date;
   });
+  
   const data = sortedData.map(d => d.amount);
 
   dailyChartInstance = new Chart(ctx, {
@@ -348,7 +422,7 @@ function renderDailyChart(dailyData) {
     data: {
       labels: labels,
       datasets: [{
-        label: '日別支出',
+        label: '支出推移',
         data: data,
         backgroundColor: '#8b5cf6', // primary color
         borderRadius: 4
@@ -447,6 +521,19 @@ document.getElementById('prev-month-btn').addEventListener('click', () => {
 document.getElementById('next-month-btn').addEventListener('click', () => {
   currentDashboardMonth.setMonth(currentDashboardMonth.getMonth() + 1);
   loadDashboardData();
+});
+
+// Dashboard Trend Toggle Listeners
+document.querySelectorAll('#trend-period-toggles .toggle-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    // UI update
+    document.querySelectorAll('#trend-period-toggles .toggle-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    
+    // Fetch and render new data
+    const period = e.target.getAttribute('data-period');
+    loadTrendChart(period);
+  });
 });
 
 document.getElementById('quick-scan-trigger').addEventListener('click', () => {

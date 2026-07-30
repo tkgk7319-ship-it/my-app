@@ -136,10 +136,15 @@
             </div>
           </div>
 
-          <!-- Daily Chart Card -->
+          <!-- Trend Chart Card -->
           <div class="glass-card chart-card">
-            <div class="card-header">
-              <h2><i class="fa-solid fa-chart-line"></i>日別推移</h2>
+            <div class="card-header" style="justify-content: space-between;">
+              <h2><i class="fa-solid fa-chart-line"></i>支出推移</h2>
+              <div class="chart-toggles" id="trend-period-toggles">
+                <button class="toggle-btn active" data-period="day">日</button>
+                <button class="toggle-btn" data-period="week">週</button>
+                <button class="toggle-btn" data-period="month">月</button>
+              </div>
             </div>
             <div class="chart-content" style="position: relative; height: 250px;">
               <canvas id="daily-chart"></canvas>
