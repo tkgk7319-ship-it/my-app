@@ -361,22 +361,66 @@ async function loadTrendChart(period) {
     // Grouping logic
     let groupedData = {};
     
+    // Initialize groupedData with 0 for all intervals in the date range
+    const startDt = new Date(startDate);
+    const endDt = new Date(endDate);
+    let currentDt = new Date(startDt);
+
+    if (period === 'day') {
+      while (currentDt <= endDt) {
+        const key = `${currentDt.getFullYear()}-${String(currentDt.getMonth() + 1).padStart(2, '0')}-${String(currentDt.getDate()).padStart(2, '0')}`;
+        groupedData[key] = 0;
+        currentDt.setDate(currentDt.getDate() + 1);
+      }
+    } else if (period === 'week') {
+      // Find the first Monday on or before startDt
+      let day = currentDt.getDay();
+      let diff = currentDt.getDate() - day + (day === 0 ? -6 : 1);
+      currentDt = new Date(currentDt.setDate(diff));
+      
+      // Adjust endDt to the Monday of its week to ensure we cover it
+      let endDay = endDt.getDay();
+      let endDiff = endDt.getDate() - endDay + (endDay === 0 ? -6 : 1);
+      let adjustedEndDt = new Date(endDt.getTime());
+      adjustedEndDt.setDate(endDiff);
+      
+      while (currentDt <= adjustedEndDt) {
+        const key = `${currentDt.getFullYear()}-${String(currentDt.getMonth() + 1).padStart(2, '0')}-${String(currentDt.getDate()).padStart(2, '0')}`;
+        groupedData[key] = 0;
+        currentDt.setDate(currentDt.getDate() + 7);
+      }
+    } else if (period === 'month') {
+      currentDt.setDate(1);
+      const endMonthDt = new Date(endDt.getTime());
+      endMonthDt.setDate(1);
+      while (currentDt <= endMonthDt) {
+        const key = `${currentDt.getFullYear()}-${String(currentDt.getMonth() + 1).padStart(2, '0')}`;
+        groupedData[key] = 0;
+        currentDt.setMonth(currentDt.getMonth() + 1);
+      }
+    }
+    
     data.expenses.forEach(exp => {
       let key = '';
       if (period === 'day') {
         key = exp.date;
       } else if (period === 'week') {
-        // Simple grouping by week of year, or just by "Week starting Monday"
+        // Group by "Week starting Monday"
         const d = new Date(exp.date);
         const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(d.setDate(diff));
         key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
       } else if (period === 'month') {
         key = exp.date.substring(0, 7); // YYYY-MM
       }
       
-      groupedData[key] = (groupedData[key] || 0) + exp.total_amount;
+      if (groupedData[key] !== undefined) {
+        groupedData[key] += exp.total_amount;
+      } else {
+        // In case an expense falls slightly outside (e.g., end of month edge cases in weekly)
+        groupedData[key] = exp.total_amount;
+      }
     });
 
     const aggregatedArray = Object.keys(groupedData).map(k => ({ date: k, amount: groupedData[k] }));
